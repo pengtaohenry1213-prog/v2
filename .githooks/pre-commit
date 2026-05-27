@@ -1,0 +1,16 @@
+#!/bin/bash
+ADMIN_USER="pengtaohenry1213-prog"
+CUR_USER=$(git config --get user.name)
+CONTROL_FILES=".cursor/rules .cursor/prompts"
+
+CHANGED=$(git diff --cached --name-only $CONTROL_FILES)
+
+if [ -n "$CHANGED" ] && [ "$CUR_USER" != "$ADMIN_USER" ]; then
+  echo "============================================="
+  echo "❌ 禁止提交：普通成员不可修改 .cursor 团队配置"
+  echo "如需调整规则/提示词，请联系管理员: $ADMIN_USER"
+  echo "============================================="
+  exit 1
+fi
+
+exit 0
