@@ -1,5 +1,0 @@
-# Cursor 团队配置锁定（只有管理员可修改）
-# .cursor/rules/** merge=ours
-# .cursor/prompts/** merge=ours
-# .cursor/plans/** merge=ours
-.cursor/** merge=ours
