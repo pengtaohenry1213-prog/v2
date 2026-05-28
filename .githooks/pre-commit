@@ -42,7 +42,8 @@ for file in $ALL_FILES; do
         continue
     fi
     if is_protected "$file"; then
-        BLOCKED_FILES="${BLOCKED_FILES}  - ${file}\n"
+        BLOCKED_FILES="${BLOCKED_FILES}  - ${file}
+"
     fi
 done
 
