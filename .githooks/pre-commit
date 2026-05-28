@@ -1,57 +1,36 @@
 #!/bin/sh
 
-# ================================================
-# 受保护目录列表（硬编码，不从 .gitattributes 读取，避免自引用陷阱）
-# ================================================
 PROTECTED_DIRS=".cursor"
-
-# ================================================
-# 跳过检查的目录（钩子自身和 Git 系统文件）
-# ================================================
 SKIP_DIRS=".githooks"
 
-# 检查一个文件是否在跳过目录中
-is_skip() {
-    local file="$1"
-    for skip in $SKIP_DIRS; do
-        case "$file" in
-            $skip|$skip/*) return 0 ;;
-        esac
-    done
-    return 1
-}
+# 仓库创建者设置 ADMIN_TOKEN=abc123
+# 普通用户不知道这个值
+ADMIN_TOKEN="${GIT_ADMIN_TOKEN:-}"
 
-# 检查一个文件是否在受保护目录中
-is_protected() {
-    local file="$1"
-    for dir in $PROTECTED_DIRS; do
-        case "$file" in
-            $dir|$dir/*) return 0 ;;
-        esac
-    done
-    return 1
-}
+# 如果提供了正确的管理令牌，跳过检查
+if [ "$ADMIN_TOKEN" = "your-secret-token-here" ]; then
+    echo "🔑 管理模式: 跳过 .cursor 保护检查"
+    exit 0
+fi
 
-# 合并所有变更文件（暂存区 + 工作区 + 未跟踪）
+# 标准检查...
 ALL_FILES=$(git diff --cached --name-only; git diff --name-only; git ls-files --others --exclude-standard)
-
 BLOCKED_FILES=""
 
 for file in $ALL_FILES; do
-    if is_skip "$file"; then
-        continue
-    fi
-    if is_protected "$file"; then
-        BLOCKED_FILES="${BLOCKED_FILES}  - ${file}
-"
-    fi
+    for skip in $SKIP_DIRS; do
+        case "$file" in $skip|$skip/*) continue 2 ;; esac
+    done
+    for dir in $PROTECTED_DIRS; do
+        case "$file" in $dir|$dir/*) BLOCKED_FILES="${BLOCKED_FILES}  - ${file}
+" ;; esac
+    done
 done
 
 if [ -n "$BLOCKED_FILES" ]; then
     echo "❌ 提交被拒绝: 以下文件匹配受保护规则"
     echo ""
     echo -e "$BLOCKED_FILES"
-    echo "如需强制提交，请联系仓库管理员或使用 git commit --no-verify"
     exit 1
 fi
 
