@@ -1,29 +1,57 @@
 #!/bin/sh
 
-# 读取 .gitattributes 中的 protected 规则
-PROTECTED_PATTERNS=$(grep 'protected' .gitattributes 2>/dev/null | awk '{print $1}')
+# ================================================
+# 受保护目录列表（硬编码，不从 .gitattributes 读取，避免自引用陷阱）
+# ================================================
+PROTECTED_DIRS=".cursor"
 
-check_protected() {
-    local pattern="$1"
-    local staged_files=$(git diff --cached --name-only)
-    local unstaged_files=$(git diff --name-only)
-    local untracked_files=$(git ls-files --others --exclude-standard)
+# ================================================
+# 跳过检查的目录（钩子自身和 Git 系统文件）
+# ================================================
+SKIP_DIRS=".githooks"
 
-    for file in $staged_files $unstaged_files $untracked_files; do
-        # 简单的前缀匹配
+# 检查一个文件是否在跳过目录中
+is_skip() {
+    local file="$1"
+    for skip in $SKIP_DIRS; do
         case "$file" in
-            $pattern) return 1 ;;
-            $pattern/*) return 1 ;;
+            $skip|$skip/*) return 0 ;;
         esac
     done
-    return 0
+    return 1
 }
 
-for pattern in $PROTECTED_PATTERNS; do
-    check_protected "$pattern" && continue
-    echo "❌ 提交被拒绝: 文件匹配 protected 规则: $pattern"
-    echo "   请移除变更或联系仓库管理员"
-    exit 1
+# 检查一个文件是否在受保护目录中
+is_protected() {
+    local file="$1"
+    for dir in $PROTECTED_DIRS; do
+        case "$file" in
+            $dir|$dir/*) return 0 ;;
+        esac
+    done
+    return 1
+}
+
+# 合并所有变更文件（暂存区 + 工作区 + 未跟踪）
+ALL_FILES=$(git diff --cached --name-only; git diff --name-only; git ls-files --others --exclude-standard)
+
+BLOCKED_FILES=""
+
+for file in $ALL_FILES; do
+    if is_skip "$file"; then
+        continue
+    fi
+    if is_protected "$file"; then
+        BLOCKED_FILES="${BLOCKED_FILES}  - ${file}\n"
+    fi
 done
+
+if [ -n "$BLOCKED_FILES" ]; then
+    echo "❌ 提交被拒绝: 以下文件匹配受保护规则"
+    echo ""
+    echo -e "$BLOCKED_FILES"
+    echo "如需强制提交，请联系仓库管理员或使用 git commit --no-verify"
+    exit 1
+fi
 
 echo "✅ protected 规则检查通过"
