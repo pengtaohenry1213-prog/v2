@@ -16,7 +16,7 @@ if [ -f "$ADMIN_TOKEN_FILE" ]; then
 fi
 
 # 与预期的哈希值比较（abc123 的哈希）
-if [ "$ADMIN_TOKEN_HASH" = "c8a47217ef49be463f00baa789bb364f2f5c274cf828b7489cdbc248331aeca8" ]; then
+if [ "$ADMIN_TOKEN_HASH" = "389ebca77cda2766bc105d67a173702c22967dc2aadb5a64c8a34726bd21d545" ]; then
     echo "🔑 管理模式: 跳过 .cursor 保护检查"
     exit 0
 fi
