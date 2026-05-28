@@ -30,7 +30,7 @@ done
 if [ -n "$BLOCKED_FILES" ]; then
     echo "❌ 提交被拒绝: 以下文件匹配受保护规则"
     echo ""
-    echo -e "$BLOCKED_FILES"
+    echo '%b' "$BLOCKED_FILES"
     exit 1
 fi
 
