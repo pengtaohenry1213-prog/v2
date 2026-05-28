@@ -3,20 +3,29 @@
 PROTECTED_DIRS=".cursor"
 SKIP_DIRS=".githooks"
 
-# 管理员token存储在本地文件中，不在代码库中追踪
-# 文件中存储明文token，脚本中只存哈希用于比对
-ADMIN_TOKEN_FILE="${GIT_HOOKS_DIR:-.githooks}/.admin_token"
+# 管理员token验证
+# 支持两种方式（优先使用环境变量）:
+#   1. 环境变量 GIT_ADMIN_TOKEN（CI/CD 使用）
+#   2. 本地文件 .admin_token（本地开发使用）
 ADMIN_TOKEN=""
 ADMIN_TOKEN_HASH=""
+ADMIN_TOKEN_FILE="${GIT_HOOKS_DIR:-.githooks}/.admin_token"
 
-if [ -f "$ADMIN_TOKEN_FILE" ]; then
+# 优先使用环境变量
+if [ -n "$GIT_ADMIN_TOKEN" ]; then
+    ADMIN_TOKEN="$GIT_ADMIN_TOKEN"
+elif [ -f "$ADMIN_TOKEN_FILE" ]; then
     ADMIN_TOKEN=$(cat "$ADMIN_TOKEN_FILE" 2>/dev/null | tr -d '[:space:]')
-    # 计算token的SHA256哈希
+fi
+
+# 计算哈希
+if [ -n "$ADMIN_TOKEN" ]; then
     ADMIN_TOKEN_HASH=$(printf '%s' "$ADMIN_TOKEN" | shasum -a 256 2>/dev/null | cut -d' ' -f1)
 fi
 
-# 与预期的哈希值比较（abc123 的哈希）
-if [ "$ADMIN_TOKEN_HASH" = "389ebca77cda2766bc105d67a173702c22967dc2aadb5a64c8a34726bd21d545" ]; then
+# 验证哈希
+EXPECTED_HASH="12e593472f3f43d5645e49a265fdb592a7e2e1da64d80ea4f0bdea077cc103af"
+if [ "$ADMIN_TOKEN_HASH" = "$EXPECTED_HASH" ]; then
     echo "🔑 管理模式: 跳过 .cursor 保护检查"
     exit 0
 fi

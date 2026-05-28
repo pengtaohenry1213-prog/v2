@@ -45,14 +45,18 @@ main() {
     echo "$NEW_TOKEN" > "$TOKEN_FILE"
     chmod 600 "$TOKEN_FILE"
 
-    # 更新 pre-commit 中的哈希
-    sed -i.bak "s/if \[ \"\$ADMIN_TOKEN_HASH\" = \"[a-f0-9]\{64\}\" \]; then/if [ \"\$ADMIN_TOKEN_HASH\" = \"$NEW_HASH\" ]; then/" "$HOOK_FILE"
+    # 更新 pre-commit 中的预期哈希
+    sed -i.bak "s/EXPECTED_HASH=\"[a-f0-9]\{64\}\"/EXPECTED_HASH=\"$NEW_HASH\"/" "$HOOK_FILE"
     rm -f "$HOOK_FILE.bak"
 
     echo ""
     echo "✅ Token 更新完成"
     echo "   新密码: $NEW_TOKEN"
     echo "   新哈希: $NEW_HASH"
+    echo ""
+    echo "使用方式:"
+    echo "   本地: .githooks/pre-commit (自动读取 .admin_token)"
+    echo "   CI/CD: GIT_ADMIN_TOKEN=$NEW_TOKEN git commit ..."
 }
 
 main "$@"
