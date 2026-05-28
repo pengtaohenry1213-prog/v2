@@ -1,16 +1,12 @@
-#!/bin/bash
-ADMIN_USER="pengtaohenry1213-prog"
-CUR_USER=$(git config --get user.name)
-CONTROL_FILES=".cursor/rules .cursor/prompts"
+#!/bin/sh
 
-CHANGED=$(git diff --cached --name-only $CONTROL_FILES)
+# 获取即将提交的内容中涉及 .cursor 目录的文件变更
+changed_cursor_files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^(\.cursor|/\.cursor)')
 
-if [ -n "$CHANGED" ] && [ "$CUR_USER" != "$ADMIN_USER" ]; then
-  echo "============================================="
-  echo "❌ 禁止提交：普通成员不可修改 .cursor 团队配置"
-  echo "如需调整规则/提示词，请联系管理员: $ADMIN_USER"
-  echo "============================================="
-  exit 1
+if [ -n "$changed_cursor_files" ]; then
+    echo "❌ 提交被拒绝: 禁止提交 .cursor 目录的任何变更"
+    echo ""
+    echo "被拒绝的文件变更:"
+    echo "$changed_cursor_files"
+    exit 1
 fi
-
-exit 0
