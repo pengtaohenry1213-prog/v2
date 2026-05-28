@@ -3,9 +3,13 @@
 PROTECTED_DIRS=".cursor"
 SKIP_DIRS=".githooks"
 
-# 仓库创建者设置 ADMIN_TOKEN=abc123
-# 普通用户不知道这个值
-ADMIN_TOKEN="${GIT_ADMIN_TOKEN:-}"
+# 管理员token存储在本地文件中，不在代码库中追踪
+ADMIN_TOKEN_FILE="${GIT_HOOKS_DIR:-.githooks}/.admin_token"
+ADMIN_TOKEN=""
+
+if [ -f "$ADMIN_TOKEN_FILE" ]; then
+    ADMIN_TOKEN=$(cat "$ADMIN_TOKEN_FILE" 2>/dev/null | tr -d '[:space:]')
+fi
 
 # 如果提供了正确的管理令牌，跳过检查
 if [ "$ADMIN_TOKEN" = "your-secret-token-here" ]; then
