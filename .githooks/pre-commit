@@ -1,12 +1,29 @@
 #!/bin/sh
 
-# 获取即将提交的内容中涉及 .cursor 目录的文件变更
-changed_cursor_files=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '^(\.cursor|/\.cursor)')
+# 读取 .gitattributes 中的 protected 规则
+PROTECTED_PATTERNS=$(grep 'protected' .gitattributes 2>/dev/null | awk '{print $1}')
 
-if [ -n "$changed_cursor_files" ]; then
-    echo "❌ 提交被拒绝: 禁止提交 .cursor 目录的任何变更"
-    echo ""
-    echo "被拒绝的文件变更:"
-    echo "$changed_cursor_files"
+check_protected() {
+    local pattern="$1"
+    local staged_files=$(git diff --cached --name-only)
+    local unstaged_files=$(git diff --name-only)
+    local untracked_files=$(git ls-files --others --exclude-standard)
+
+    for file in $staged_files $unstaged_files $untracked_files; do
+        # 简单的前缀匹配
+        case "$file" in
+            $pattern) return 1 ;;
+            $pattern/*) return 1 ;;
+        esac
+    done
+    return 0
+}
+
+for pattern in $PROTECTED_PATTERNS; do
+    check_protected "$pattern" && continue
+    echo "❌ 提交被拒绝: 文件匹配 protected 规则: $pattern"
+    echo "   请移除变更或联系仓库管理员"
     exit 1
-fi
+done
+
+echo "✅ protected 规则检查通过"
